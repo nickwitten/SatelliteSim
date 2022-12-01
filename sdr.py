@@ -5,19 +5,30 @@ from scipy.signal import butter, lfilter, freqz
 
 
 NUM_SUB_CARRIERS = 8  # Number of sub-carriers in the OFDM channel
-EB = 5  # Energy per bit
-SCS = 60e3 # Sub-carrier spacing in Hz
-CARRIER_FREQ = 20e9  # Carrier frequency in Hz
-TS = 1 / (2 * SCS * NUM_SUB_CARRIERS)  # DAC/ADC sample rate
-SIMULATION_TS = 1 / (4 * CARRIER_FREQ)
-NUM_SIMULATION_SAMPLES_BLOCK = NUM_SUB_CARRIERS * int(TS / SIMULATION_TS)  # Number of "continous" samples per block
 NUM_BITS_BLOCK = NUM_SUB_CARRIERS * 2  # Number of bits per block
-CARRIER_SAMPLES_I = np.array([np.cos(2 * np.pi * CARRIER_FREQ * n * SIMULATION_TS) for n in
-    range(NUM_SIMULATION_SAMPLES_BLOCK)], dtype=np.float64)  # Simulation in-phase "continuous" samples
-CARRIER_SAMPLES_Q = np.array([np.sin(2 * np.pi * CARRIER_FREQ * n * SIMULATION_TS) for n in
-    range(NUM_SIMULATION_SAMPLES_BLOCK)], dtype=np.float64)  # Simulation quadrature "continuous" samples
+EB = 10  # Energy per bit
+SCS = 60e3 # Sub-carrier spacing in Hz
+CARRIER_FREQ = 30e9  # Carrier frequency in Hz
+# TS = 1 / (2 * SCS * NUM_SUB_CARRIERS)  # DAC/ADC sample rate
+TS = 1 / SCS  # DAC/ADC sample rate
+SIMULATION_TS = 1 / (4 * CARRIER_FREQ)
 RX_CONSTELLATION_BUFFER = []  # Used to hold the latest received symbol vectors for plotting
+NUM_SIMULATION_SAMPLES_BLOCK = None
+CARRIER_SAMPLES_I = None
+CARRIER_SAMPLES_Q = None
 
+
+def calculate_simulation_timing_parameters():
+    """ Recalculate simulation timing parameters """
+    global NUM_SIMULATION_SAMPLES_BLOCK
+    global CARRIER_SAMPLES_I
+    global CARRIER_SAMPLES_Q
+    NUM_SIMULATION_SAMPLES_BLOCK = NUM_SUB_CARRIERS * int(TS / SIMULATION_TS)  # Number of "continous" samples per block
+    CARRIER_SAMPLES_I = np.array([np.cos(2 * np.pi * CARRIER_FREQ * n * SIMULATION_TS) for n in
+        range(NUM_SIMULATION_SAMPLES_BLOCK)], dtype=np.float64)  # Simulation in-phase "continuous" samples
+    CARRIER_SAMPLES_Q = np.array([np.sin(2 * np.pi * CARRIER_FREQ * n * SIMULATION_TS) for n in
+        range(NUM_SIMULATION_SAMPLES_BLOCK)], dtype=np.float64)  # Simulation quadrature "continuous" samples
+calculate_simulation_timing_parameters()
 
 def tx(data: bytes):
     """ Simulate SDR transmission path from binary data to a continuous time
@@ -54,7 +65,7 @@ def rx(continuous_samples: list):
     assert int(num_blocks) == num_blocks
     num_blocks = int(num_blocks)
     # Allocate binary data array
-    rx_data = []
+    rx_data = bytearray()
     # Reset the constellation buffer
     RX_CONSTELLATION_BUFFER = []
     # Loop through the blocks and apply all SDR operations
@@ -64,9 +75,9 @@ def rx(continuous_samples: list):
                                (i+1) * NUM_SIMULATION_SAMPLES_BLOCK]
         )
         rx_vectors = fft_rx(rx_baseband_samples)
-        rx_data.append(symbol_map_rx(rx_vectors))
+        rx_data.extend(symbol_map_rx(rx_vectors))
         RX_CONSTELLATION_BUFFER.append(rx_vectors)
-    return rx_data
+    return bytes(rx_data)
 
 def plot_rx_constellation():
     """ Plot the latest received signal vectors. Must be called after rx() """
@@ -147,17 +158,16 @@ def down_converter_rx(continuous: list):
 
 
 if __name__ == '__main__':
-    data = "Hello World!".encode()
-    print(f"Sending {data.decode()}")
+    tx_data = "Hello World!".encode()
+    print(f"Sending {tx_data.decode()}")
 
-    continuous_samples = tx(data)
+    continuous_samples = tx(tx_data)
     rx_data = rx(continuous_samples)
 
-    print(RX_CONSTELLATION_BUFFER)
     plot_rx_constellation()
 
     try:
-        print(f"Received {data.decode()}")
+        print(f"Received {rx_data.decode()}")
     except:
         pass
 
