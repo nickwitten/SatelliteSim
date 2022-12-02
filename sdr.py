@@ -28,7 +28,6 @@ def calculate_simulation_timing_parameters():
         range(NUM_SIMULATION_SAMPLES_BLOCK)], dtype=np.float64)  # Simulation in-phase "continuous" samples
     CARRIER_SAMPLES_Q = np.array([np.sin(2 * np.pi * CARRIER_FREQ * n * SIMULATION_TS) for n in
         range(NUM_SIMULATION_SAMPLES_BLOCK)], dtype=np.float64)  # Simulation quadrature "continuous" samples
-calculate_simulation_timing_parameters()
 
 def tx(data: bytes):
     """ Simulate SDR transmission path from binary data to a continuous time
@@ -158,6 +157,8 @@ def down_converter_rx(continuous: list):
 
 
 if __name__ == '__main__':
+    calculate_simulation_timing_parameters()
+
     tx_data = "Hello World!".encode()
     print(f"Sending {tx_data.decode()}")
 

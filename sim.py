@@ -36,6 +36,8 @@ def add_noise(samples, power):
     return samples + noise
 
 if __name__ == '__main__':
+    sdr.calculate_simulation_timing_parameters()
+
     tx_data = "Hello World!".encode()
     print(f"Sending:\n\t{tx_data.decode()}")
 
