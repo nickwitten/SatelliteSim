@@ -124,7 +124,7 @@ def fft_rx(samples: list):
     assert len(samples) == NUM_SUB_CARRIERS
     return np.fft.fft(samples)
 
-def up_converter_tx(samples: list):
+def up_converter_tx(samples: list, plot=False):
     """ Take in 8 complex time domain samples and modulate with the carrier
     frequency. Returns "continuous" time domain array """
     assert len(samples) == 8
@@ -135,7 +135,20 @@ def up_converter_tx(samples: list):
     # Mix with carrier frequency
     mixed_samples_i = np.real(samples) * CARRIER_SAMPLES_I
     mixed_samples_q = np.imag(samples) * CARRIER_SAMPLES_Q
-    # Add the mixed IQ signals
+    if plot:
+        t = SIMULATION_TS * np.arange(mixed_samples_i.size)
+        plt.subplot(221)
+        plt.title("Inphase DAC Output")
+        plt.plot(t, np.real(samples))
+        plt.subplot(223)
+        plt.title("Quadrature DAC Output")
+        plt.plot(t, np.imag(samples))
+        plt.subplot(222)
+        plt.title("Inphase Modulated Signal")
+        plt.plot(t, mixed_samples_i)
+        plt.subplot(224)
+        plt.title("Quadrature Modulated Signal")
+        plt.plot(t, mixed_samples_q)
     return mixed_samples_i + mixed_samples_q
 
 def down_converter_rx(continuous: list):
