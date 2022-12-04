@@ -151,19 +151,34 @@ def up_converter_tx(samples: list, plot=False):
         plt.plot(t, mixed_samples_q)
     return mixed_samples_i + mixed_samples_q
 
-def down_converter_rx(continuous: list):
+def down_converter_rx(continuous: list, plot=False):
     """ Take in continuous time domain array, demodulate to baseband, and
     sample. Returns 8 complex time domain samples """
     # Multiply by carrier frequency
     demodulated_i = continuous * CARRIER_SAMPLES_I
     demodulated_q = continuous * CARRIER_SAMPLES_Q
-    b, a = butter(3, 6 * NUM_SUB_CARRIERS * SCS, fs=(1/SIMULATION_TS), btype='low', analog=False)
-    demodulated_i = lfilter(b, a, demodulated_i)
-    demodulated_q = lfilter(b, a, demodulated_q)
+    # Filter with a lowpass filter.
+    b, a = butter(3, 2 * NUM_SUB_CARRIERS * SCS, fs=(1/SIMULATION_TS), btype='low', analog=False)
+    filtered_i = lfilter(b, a, demodulated_i)
+    filtered_q = lfilter(b, a, demodulated_q)
+    if plot:
+        t = SIMULATION_TS * np.arange(filtered_i.size)
+        plt.subplot(221)
+        plt.title("Inphase Demodulated")
+        plt.plot(t, demodulated_i)
+        plt.title("Quadrature Demodulated")
+        plt.subplot(223)
+        plt.plot(t, demodulated_q)
+        plt.subplot(222)
+        plt.title("Inphase Filtered")
+        plt.plot(t, filtered_i)
+        plt.subplot(224)
+        plt.title("Quadrature Filtered")
+        plt.plot(t, filtered_q)
     # Sample the signals to simulate ADC conversion
     sample_rate = int(TS / SIMULATION_TS)
-    samples_i = demodulated_i[sample_rate - 1::sample_rate]
-    samples_q = demodulated_q[sample_rate - 1::sample_rate]
+    samples_i = filtered_i[sample_rate - 1::sample_rate]
+    samples_q = filtered_q[sample_rate - 1::sample_rate]
     # Place back into complex values and mutliply by 2 because of amplitude
     # loss in demodulation
     return np.array([2 * complex(real, imag) for real, imag in zip(samples_i, samples_q)])
