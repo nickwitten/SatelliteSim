@@ -9,8 +9,7 @@ NUM_BITS_BLOCK = NUM_SUB_CARRIERS * 2  # Number of bits per block
 EB = 10  # Energy per bit
 SCS = 60e3 # Sub-carrier spacing in Hz
 CARRIER_FREQ = 30e9  # Carrier frequency in Hz
-# TS = 1 / (2 * SCS * NUM_SUB_CARRIERS)  # DAC/ADC sample rate
-TS = 1 / SCS  # DAC/ADC sample rate
+TS = 1 / (SCS * NUM_SUB_CARRIERS)  # DAC/ADC sample rate
 SIMULATION_TS = 1 / (4 * CARRIER_FREQ)
 RX_CONSTELLATION_BUFFER = []  # Used to hold the latest received symbol vectors for plotting
 NUM_SIMULATION_SAMPLES_BLOCK = None
@@ -99,7 +98,7 @@ def symbol_map_tx(data: bytes):
             ((data[byte_index] >> (i % 8 + 1)) & 1) * 2 - 1
         )
         symbols[int(i / 2)] = symbol
-    return symbols * np.sqrt(EB)
+    return symbols * np.sqrt(EB / 2)
 
 def symbol_map_rx(symbols: list):
     """ Return 16 bit stream from 8 complex vectors using QPSK bit mapping and
